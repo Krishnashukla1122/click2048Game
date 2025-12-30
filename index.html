@@ -2,76 +2,94 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2048 Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile 2048</title>
     <style>
+        :root {
+            --bg-color: #faf8ef;
+            --grid-bg: #bbada0;
+            --cell-bg: rgba(238, 228, 218, 0.35);
+            --text-dark: #776e65;
+        }
+
         body {
-            background-color: #faf8ef;
+            background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+            font-family: "Clear Sans", sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
+            touch-action: none; /* Prevents screen scrolling while playing */
+            overflow: hidden;
         }
 
         .header {
-            width: 400px;
+            width: 100%;
+            max-width: 400px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 10px;
         }
 
-        h1 { font-size: 60px; margin: 0; color: #776e65; }
+        h1 { font-size: 40px; margin: 0; color: var(--text-dark); }
 
         .score-container {
-            background: #bbada0;
-            padding: 10px 20px;
+            background: var(--grid-bg);
+            padding: 5px 15px;
             border-radius: 6px;
             color: white;
             text-align: center;
-            font-weight: bold;
         }
 
         .grid {
-            background-color: #bbada0;
-            width: 400px;
-            height: 400px;
-            border: 10px solid #bbada0;
+            background-color: var(--grid-bg);
+            width: 90vw;
+            height: 90vw;
+            max-width: 400px;
+            max-height: 400px;
+            border: 8px solid var(--grid-bg);
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: repeat(4, 1fr);
-            gap: 10px;
+            gap: 8px;
             border-radius: 6px;
-            margin-top: 20px;
         }
 
         .cell {
-            background-color: rgba(238, 228, 218, 0.35);
+            background-color: var(--cell-bg);
             border-radius: 3px;
-            width: 90px;
-            height: 90px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 35px;
+            font-size: calc(90vw / 10); /* Responsive font size */
             font-weight: bold;
-            color: #776e65;
-            transition: all 0.1s ease;
+            color: var(--text-dark);
         }
 
-        /* Tile Colors based on value */
+        @media (min-width: 450px) {
+            .cell { font-size: 35px; }
+        }
+
+        /* Tile Colors */
         .tile-2 { background: #eee4da; }
         .tile-4 { background: #ede0c8; }
         .tile-8 { background: #f2b179; color: white; }
         .tile-16 { background: #f59563; color: white; }
         .tile-32 { background: #f67c5f; color: white; }
         .tile-64 { background: #f65e3b; color: white; }
-        .tile-128 { background: #edcf72; color: white; font-size: 30px; }
-        .tile-256 { background: #edcc61; color: white; font-size: 30px; }
-        .tile-512 { background: #edc850; color: white; font-size: 30px; }
-        .tile-1024 { background: #edc53f; color: white; font-size: 25px; }
-        .tile-2048 { background: #edc22e; color: white; font-size: 25px; }
+        .tile-128 { background: #edcf72; color: white; font-size: 0.8em; }
+        .tile-256 { background: #edcc61; color: white; font-size: 0.8em; }
+        .tile-512 { background: #edc850; color: white; font-size: 0.8em; }
+        .tile-1024 { background: #edc53f; color: white; font-size: 0.6em; }
+        .tile-2048 { background: #edc22e; color: white; font-size: 0.6em; }
+
+        .instructions {
+            margin-top: 20px;
+            color: var(--text-dark);
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -79,12 +97,13 @@
     <div class="header">
         <h1>2048</h1>
         <div class="score-container">
-            <div>SCORE</div>
-            <div id="score">0</div>
+            <div style="font-size: 12px;">SCORE</div>
+            <div id="score" style="font-size: 20px; font-weight: bold;">0</div>
         </div>
     </div>
 
     <div id="grid" class="grid"></div>
+    <p class="instructions">Swipe or use Arrow Keys to play</p>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -93,11 +112,9 @@
             let squares = [];
             let score = 0;
 
-            // Create the 4x4 board
             function createBoard() {
                 for (let i = 0; i < 16; i++) {
                     let square = document.createElement('div');
-                    square.innerHTML = "";
                     square.classList.add('cell');
                     gridDisplay.appendChild(square);
                     squares.push(square);
@@ -107,7 +124,6 @@
             }
             createBoard();
 
-            // Spawn a random '2' in an empty cell
             function generate() {
                 let emptySquares = squares.filter(s => s.innerHTML === "");
                 if (emptySquares.length > 0) {
@@ -125,8 +141,6 @@
                     }
                 });
             }
-
-            // --- MOVEMENT LOGIC ---
 
             function slide(row) {
                 let filteredRow = row.filter(num => num);
@@ -146,6 +160,87 @@
                     }
                 }
                 return row;
+            }
+
+            function moveHorizontal(direction) {
+                for (let i = 0; i < 16; i += 4) {
+                    let row = [squares[i].innerHTML, squares[i+1].innerHTML, squares[i+2].innerHTML, squares[i+3].innerHTML];
+                    let { filteredRow, zeros } = slide(row);
+                    let processedRow = (direction === 'left') ? filteredRow.concat(zeros) : zeros.concat(filteredRow);
+                    processedRow = combine(processedRow);
+                    let finalSlide = slide(processedRow);
+                    let finalRow = (direction === 'left') ? finalSlide.filteredRow.concat(finalSlide.zeros) : finalSlide.zeros.concat(finalSlide.filteredRow);
+                    for (let j = 0; j < 4; j++) squares[i + j].innerHTML = finalRow[j];
+                }
+            }
+
+            function moveVertical(direction) {
+                for (let i = 0; i < 4; i++) {
+                    let column = [squares[i].innerHTML, squares[i+4].innerHTML, squares[i+8].innerHTML, squares[i+12].innerHTML];
+                    let { filteredRow, zeros } = slide(column);
+                    let processedCol = (direction === 'up') ? filteredRow.concat(zeros) : zeros.concat(filteredRow);
+                    processedCol = combine(processedCol);
+                    let finalSlide = slide(processedCol);
+                    let finalCol = (direction === 'up') ? finalSlide.filteredRow.concat(finalSlide.zeros) : finalSlide.zeros.concat(finalSlide.filteredRow);
+                    for (let j = 0; j < 4; j++) squares[i + (j * 4)].innerHTML = finalCol[j];
+                }
+            }
+
+            // Keyboard Controls
+            function control(e) {
+                if (e.key === 'ArrowLeft') moveHorizontal('left'), generate();
+                else if (e.key === 'ArrowRight') moveHorizontal('right'), generate();
+                else if (e.key === 'ArrowUp') moveVertical('up'), generate();
+                else if (e.key === 'ArrowDown') moveVertical('down'), generate();
+                checkForGameOver();
+            }
+            document.addEventListener('keyup', control);
+
+            // Touch Controls
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+
+            document.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, false);
+
+            document.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                touchEndY = e.changedTouches[0].screenY;
+                handleSwipe();
+            }, false);
+
+            function handleSwipe() {
+                let dx = touchEndX - touchStartX;
+                let dy = touchEndY - touchStartY;
+                
+                // Only trigger if swipe is long enough
+                if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        if (dx > 0) moveHorizontal('right');
+                        else moveHorizontal('left');
+                    } else {
+                        if (dy > 0) moveVertical('down');
+                        else moveVertical('up');
+                    }
+                    generate();
+                    checkForGameOver();
+                }
+            }
+
+            function checkForGameOver() {
+                let zeros = squares.filter(s => s.innerHTML === "").length;
+                if (zeros === 0) {
+                    alert("Game Over! Score: " + score);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
             }
 
             function moveHorizontal(direction) {
